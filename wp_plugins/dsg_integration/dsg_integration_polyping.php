@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: DSG Integration - PolyPing
- * Version: 1.2.1
+ * Version: 1.2.0
  * Author: Eric A Mohlenhoff <eamohl@leadsanddata.net>
  */
 
@@ -44,9 +44,12 @@ if ( class_exists( "GFForms" )) {
 		
 		public function choose_polyping_post_field( $position, $form_id )
 		{
-			/*if ( $this->get_setting( 'polyping_integration_enabled' ) != '1' ) {
+			$form = $this->get_current_form();
+			$settings = $this->get_form_settings( $form );
+			
+			if ( $settings['polyping_integration_enabled'] != '1' ) {
 				return;
-			}*/
+			}
 			
 			if ( $position == 50 ) {
 				echo '<li class="polyping_post_field_setting field_setting">';
@@ -98,15 +101,8 @@ if ( class_exists( "GFForms" )) {
 		
 		protected function get_all_polyping_post_fields()
 		{
-			//$polyping_post_fields = $this->get_setting( 'polyping_vertical_fields' );
-			//print_r( $polyping_post_fields );
-			//$polyping_post_fields = preg_split( '/,/', $polyping_post_fields );
-			//print_r( $polyping_post_fields );
-			
-			//$settings = $this->get_current_settings();
 			$form = $this->get_current_form();
 			$settings = $this->get_form_settings( $form );
-			//print_r( $settings );
 			
 			$polyping_post_fields = explode( ',', $settings['polyping_vertical_fields'] );
 			
@@ -143,42 +139,12 @@ if ( class_exists( "GFForms" )) {
 								)
 							)
 						)
-						/*,array(
-							"label" => "PolyPing Post Doc URL"
-							,"type" => "text"
-							,"name" => "polyping_post_doc_url"
-							,"tooltip" => "Enter the URL of the PolyPing posting instructions for the target vertical."
-							,"class" => "large"
-						)*/
 					)
 				)
 				,array(
 					"title" => "Credentials"
 					,"fields" => array(
-						/*array(
-							"label" => "Publisher Password Method"
-							,"type" => "radio"
-							,"name" => "polyping_publisher_password_method"
-							,"tooltip" => "Choose whether to use a statically defined publisher password (given on this settings page) or obtain dynamically from a form field."
-							,"choices" => array(
-								array(
-									"label" => "Statically Defined"
-									,"value" => "static"
-								)
-								,array(
-									"label" => "Dynamically Obtained"
-									,"value" => "dynamic"
-								)
-							)
-						)
-						,array(
-							"label" => "Statically Defined Publisher Password"
-							,"type" => "text"
-							,"name" => "polyping_static_publisher_password"
-							,"tooltip" => "If choosing to use a statically defined publisher password, enter it here."
-							,"class" => "medium"
-						)
-						,*/array(
+						array(
 							"label" => "Publisher Password Field"
 							,"type" => "select"
 							,"name" => "polyping_dynamic_publisher_password"
@@ -230,6 +196,72 @@ if ( class_exists( "GFForms" )) {
 							,"type" => "textarea"
 							,"name" => "polyping_vertical_fields"
 							,"tooltip" => "Comma-separated list of vertical fields. Dynamically populated after saving post doc URL setting."
+							,"class" => "large"
+						)
+					)
+				)
+				,array(
+					"title" => "Response Handling"
+					,"fields" => array(
+						array(
+							"label" => "Confirmation Settings"
+							,"type" => "checkbox"
+							,"name" => "polyping_override_confirmation"
+							,"tooltip" => "Check this setting if the existing confirmation settings for the form are to be overridden. The below fields for specifying redirect URLs specific to each possible PolyPing response will be used instead."
+							,"choices" => array(
+								array(
+									"label" => "Override"
+									,"name" => "polyping_override_confirmation"
+								)
+							)
+						)
+						,array(
+							"label" => "Accept URL"
+							,"type" => "text"
+							,"name" => "polyping_accept_url"
+							,"tooltip" => "The URL to redirect to after form submission on an accept response from PolyPing."
+							,"class" => "large"
+						)
+						,array(
+							"label" => "Reject URL"
+							,"type" => "text"
+							,"name" => "polyping_reject_url"
+							,"tooltip" => "The URL to redirect to after form submission on a reject response from PolyPing."
+							,"class" => "large"
+						)
+						,array(
+							"label" => "Error URL"
+							,"type" => "text"
+							,"name" => "polyping_error_url"
+							,"tooltip" => "The URL to redirect to after form submission on an error response from PolyPing."
+							,"class" => "large"
+						)
+					)
+				)
+				,array(
+					"title" => "Conversion Tracking"
+					,"fields" => array(
+						array(
+							"label" => "Convert On"
+							,"type" => "radio"
+							,"name" => "polyping_convert_on"
+							,"tooltip" => "Choose the criteria on which to fire a conversion here."
+							,"choices" => array(
+								array(
+									"label" => "Every Accept"
+									,"value" => "every_accept"
+								)
+								,array(
+									"label" => "Bucket Filled"
+									,"value" => "bucket_filled"
+								)
+							)
+						)
+						,array(
+							"label" => "Server Postback URL"
+							,"type" => "text"
+							,"name" => "polyping_postback_url"
+							,"tooltip" => "Set the server postback URL to be used when firing a conversion here."
 							,"class" => "large"
 						)
 					)
