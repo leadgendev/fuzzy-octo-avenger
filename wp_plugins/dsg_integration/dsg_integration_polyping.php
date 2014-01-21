@@ -45,11 +45,65 @@ if ( class_exists( "GFForms" )) {
 		public function init_frontend()
 		{
 			parent::init_frontend();
+			
+			add_action( "gform_after_submission", array( $this, "post_to_polyping" ), 10, 2 );
+			add_filter( "gform_confirmation", array( $this, "custom_confirmation" ), 10, 4 );
 		}
 
 		public function init_ajax()
 		{
 			parent::init_ajax();
+		}
+		
+		public function post_to_polyping( $entry, $form )
+		{
+			$settings = $this->get_form_settings( $form );
+			
+			if ( $settings['polyping_integration_enabled'] != '1' ) {
+				return;
+			}
+			
+			$post_url = $settings['polyping_vertical_posting_url'];
+			
+			$post_body = array();
+			$post_body['license'] = $settings['polyping_platform_license'];
+			$post_body['password'] = $entry[$settings['polyping_publisher_password_field']];
+			$post_body['sub_id'] = $entry[$settings['polyping_subid_source_field']];
+			
+			for ( $i = 0; $i < count( $form['fields'] ); $i++ ) {
+				$field = $form['fields'][$i];
+				
+				if (( isset( $field['polyPingPostField'] )) && ( $field['polyPingPostField'] != "" )) {
+					$post_body[$field['polyPingPostField']] = $entry[$field['id']];
+				}
+			}
+			
+			gform_update_meta( $entry['id'], 'polyping_post_url', $post_url );
+			gform_update_meta( $entry['id'], 'polyping_post_body', $post_body );
+			
+			$request = new WP_Http();
+			$response = $request->post( $post_url, array( 'body' => $post_body ));
+			
+			gform_update_meta( $entry['id'], 'polyping_response_raw', $response );
+			
+			$xml = simplexml_load_string( $response['body'] );
+			gform_update_meta( $entry['id'], 'polyping_response_success', (string) $xml->success );
+			gform_update_meta( $entry['id'], 'polyping_response_message', (string) $xml->message );
+			if ( isset( $xml->session_id )) {
+				gform_update_meta( $entry['id'], 'polyping_response_session_id', (string) $xml->session_id );
+			}
+			if ( isset( $xml->price )) {
+				gform_update_meta( $entry['id'], 'polyping_response_price', (string) $xml->price );
+			}
+			if ( isset( $xml->redirect )) {
+				gform_update_meta( $entry['id'], 'polyping_response_redirect', (string) $xml->redirect );
+			}
+		}
+		
+		public function custom_confirmation( $confirmation, $form, $entry, $is_ajax )
+		{
+			
+			return $confirmation;
 		}
 		
 		public function choose_polyping_post_field( $position, $form_id )
@@ -287,7 +341,7 @@ if ( class_exists( "GFForms" )) {
 			for ( $i = 0; $i < count( $form["fields"] ); $i++ ) {
 				$field_choices[] = array(
 					"label" => $form["fields"][$i]["label"]
-					,"value" => "$i"
+					,"value" => $form["fields"][$i]["id"]
 				);
 			}
 			
