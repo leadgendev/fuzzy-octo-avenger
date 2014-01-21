@@ -98,6 +98,9 @@ if ( class_exists( "GFForms" )) {
 			if ( isset( $xml->redirect )) {
 				gform_update_meta( $entry['id'], 'polyping_response_redirect', (string) $xml->redirect );
 			}
+			if ( isset( $xml->bucket )) {
+				gform_update_meta( $entry['id'], 'polyping_response_bucket', (string) $xml->bucket );
+			}
 		}
 		
 		public function custom_confirmation( $confirmation, $form, $entry, $is_ajax )
