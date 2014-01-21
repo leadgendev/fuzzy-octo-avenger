@@ -42,6 +42,16 @@ if ( class_exists( "GFForms" )) {
 			add_filter( "gform_tooltips", array( $this, "choose_polyping_post_field_tooltip" ));
 		}
 		
+		public function init_frontend()
+		{
+			parent::init_frontend();
+		}
+
+		public function init_ajax()
+		{
+			parent::init_ajax();
+		}
+		
 		public function choose_polyping_post_field( $position, $form_id )
 		{
 			$form = $this->get_current_form();
@@ -109,16 +119,6 @@ if ( class_exists( "GFForms" )) {
 			return $polyping_post_fields;
 		}
 
-		public function init_frontend()
-		{
-			parent::init_frontend();
-		}
-
-		public function init_ajax()
-		{
-			parent::init_ajax();
-		}
-
 		public function form_settings_fields( $form )
 		{
 			$field_choices = $this->get_all_field_choices( $form );
@@ -147,7 +147,7 @@ if ( class_exists( "GFForms" )) {
 						array(
 							"label" => "Publisher Password Field"
 							,"type" => "select"
-							,"name" => "polyping_dynamic_publisher_password"
+							,"name" => "polyping_publisher_password_field"
 							,"tooltip" => "If choosing to use a dynamically obtained publisher password, select the form field providing it here."
 							,"choices" => $field_choices
 						)
@@ -220,21 +220,21 @@ if ( class_exists( "GFForms" )) {
 							,"type" => "text"
 							,"name" => "polyping_accept_url"
 							,"tooltip" => "The URL to redirect to after form submission on an accept response from PolyPing."
-							,"class" => "large"
+							,"class" => "large merge-tag-support mt-position-right"
 						)
 						,array(
 							"label" => "Reject URL"
 							,"type" => "text"
 							,"name" => "polyping_reject_url"
 							,"tooltip" => "The URL to redirect to after form submission on a reject response from PolyPing."
-							,"class" => "large"
+							,"class" => "large merge-tag-support mt-position-right"
 						)
 						,array(
 							"label" => "Error URL"
 							,"type" => "text"
 							,"name" => "polyping_error_url"
 							,"tooltip" => "The URL to redirect to after form submission on an error response from PolyPing."
-							,"class" => "large"
+							,"class" => "large merge-tag-support mt-position-right"
 						)
 					)
 				)
@@ -255,6 +255,10 @@ if ( class_exists( "GFForms" )) {
 									"label" => "Bucket Filled"
 									,"value" => "bucket_filled"
 								)
+								,array(
+									"label" => "Do Not Convert"
+									,"value" => "do_not_convert"
+								)
 							)
 						)
 						,array(
@@ -262,7 +266,7 @@ if ( class_exists( "GFForms" )) {
 							,"type" => "text"
 							,"name" => "polyping_postback_url"
 							,"tooltip" => "Set the server postback URL to be used when firing a conversion here."
-							,"class" => "large"
+							,"class" => "large merge-tag-support mt-position-right"
 						)
 					)
 				)
