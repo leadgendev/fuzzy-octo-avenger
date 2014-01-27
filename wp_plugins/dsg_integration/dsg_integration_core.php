@@ -22,13 +22,19 @@ class DSG_Integration_Core
 	 */
 	protected static $current_instance = NULL;
 	
+	protected static $create_session_dependencies = array(
+		'affiliate_id' => 'data'
+		,'offer_id' => 'data'
+		,'transaction_id' => 'session_token'
+	);
+	
 	/**
 	 * Class Instance Members
 	 */
 	
-	protected $session_token;
+	protected $session_token = NULL;
 
-	protected $active_session;
+	protected $active_session = NULL;
 	
 	/**
 	 * Static Class Utility and Helper Functions
@@ -71,18 +77,34 @@ SQL;
 
 	public static function is_session_token_valid( $session_token )
 	{
-		/**
-		 * TODO
-		 */
-		return TRUE;
+		global $wpdb;
+		
+		$table = $wpdb->prefix . self::SQL_TABLE_NAME;
+		$sql = "SELECT * FROM $table WHERE session_token = %s";
+		$sql = sprintf( $sql, addslashes( $session_token ));
+		$row = $wpdb->get_row( $sql );
+		
+		if ( $row == NULL ) {
+			return FALSE;
+		} else {
+			return TRUE;
+		}
 	}
 	
 	public static function is_session_token_expired( $session_token )
 	{
-		/**
-		 * TODO
-		 */
-		return FALSE;
+		global $wpdb;
+		
+		$table = $wpdb->prefix . self::SQL_TABLE_NAME;
+		$sql = "SELECT * FROM $table WHERE session_token = %s AND expires > CURRENT_TIMESTAMP";
+		$sql = sprintf( $sql, addslashes( $session_token ));
+		$row = $wpdb->get_row( $sql );
+		
+		if ( $row == NULL ) {
+			return FALSE;
+		} else {
+			return TRUE;
+		}
 	}
 
 	public static function can_session_token_be_restored()
@@ -157,6 +179,7 @@ SQL;
 	 */
 	protected function __construct()
 	{
+		$this->active_session = array();
 	}
 	
 	/**
@@ -195,6 +218,75 @@ SQL;
 	public function get_session_token()
 	{
 		return $this->session_token;
+	}
+	
+	public function restore_active_session()
+	{
+		global $wpdb;
+		
+		$table = $wpdb->prefix . self::SQL_TABLE_NAME;
+		$sql = "SELECT * FROM $table WHERE session_token = %s";
+		$sql = sprintf( $sql, addslashes( $this->session_token ));
+		$row = $wpdb->get_row( $sql );
+		
+		$this->active_session = unserialize( $row->active_session );
+	}
+	
+	public function create_active_session()
+	{
+		global $wpdb;
+		
+		$table = $wpdb->prefix . self::SQL_TABLE_NAME;
+		
+		$this->active_session['affiliate_id'] = $_GET['affiliate_id'];
+		$this->active_session['offer_id'] = $_GET['offer_id'];
+		$this->active_session['transaction_id'] = $_GET['transaction_id'];
+		
+		$active_session = serialize( $this->active_session );
+		
+		$values = array(
+			'session_token' => $this->session_token
+			,'active_session' => $active_session
+			,'expires' => 'TIMESTAMPADD(DAY, 30, CURRENT_TIMESTAMP)'
+		);
+		
+		$wpdb->insert( $table, $values );
+	}
+	
+	public function update_active_session()
+	{
+		global $wpdb;
+		
+		$table = $wpdb->prefix . self::SQL_TABLE_NAME;
+		$where = array(
+			'session_token' => $this->session_token
+		);
+		$active_session = serialize( $this->active_session );
+		$values = array(
+			'active_session' => $active_session
+		);
+		
+		$wpdb->update( $table, $where, $values );
+	}
+	
+	public function active_session_get( $key )
+	{
+		return $this->active_session[$key];
+	}
+	
+	public function active_session_set( $key, $value )
+	{
+		$this->active_session[$key] = $value;
+	}
+	
+	public function active_session_has( $key )
+	{
+		return isset( $this->active_session[$key] );
+	}
+	
+	public function active_session_remove( $key )
+	{
+		unset( $this->active_session[$key] );
 	}
 }
 
