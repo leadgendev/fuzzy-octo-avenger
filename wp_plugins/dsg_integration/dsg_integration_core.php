@@ -15,7 +15,7 @@ class DSG_Integration_Core
 
 	const SESSION_TOKEN_EXPIATION = 2592000;
 	
-	const SQL_TABLE_NAME = "_dsg_core_active_sessions";
+	const SQL_TABLE_NAME = "dsg_core_active_sessions";
 	
 	/**
 	 * Class Singleton Instance
