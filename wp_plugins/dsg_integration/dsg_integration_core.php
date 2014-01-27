@@ -13,7 +13,7 @@ class DSG_Integration_Core
 	
 	const SESSION_TOKEN_NAME = "dsg_core_session_token";
 
-	const SESSION_TOKEN_EXPIATION = 2592000;
+	const SESSION_TOKEN_EXPIRATION = 2592000;
 	
 	const SQL_TABLE_NAME = "dsg_core_active_sessions";
 	
@@ -64,6 +64,11 @@ SQL;
 	public static function plugin_activation()
 	{
 		self::create_sql_table();
+	}
+	
+	public static function setup_core()
+	{
+		$instance = self::get_instance();
 	}
 	
 	public static function is_session_token_set()
@@ -295,5 +300,7 @@ SQL;
  */
 
  register_activation_hook( __FILE__, array( 'DSG_Integration_Core', 'plugin_activation' ));
+ 
+ add_action( 'send_headers', array( 'DSG_Integration_Core', 'setup_core' ));
 
 ?>
