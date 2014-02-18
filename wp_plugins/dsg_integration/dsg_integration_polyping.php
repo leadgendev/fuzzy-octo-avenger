@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: DSG Integration - PolyPing
- * Version: 1.2.0
+ * Version: 1.4.0
  * Author: Eric A Mohlenhoff <eamohl@leadsanddata.net>
  */
 
@@ -10,7 +10,7 @@ if ( class_exists( "GFForms" )) {
 
 	class DSG_Integration_PolyPing extends GFAddOn
 	{
-		protected $_version = "1.2.0";
+		protected $_version = "1.4.0";
 		protected $_min_gravityforms_version = "1.8.1";
 		protected $_slug = "dsg_integration_polyping";
 		protected $_path = "dsg_integration/dsg_integration_polyping.php";
@@ -40,14 +40,15 @@ if ( class_exists( "GFForms" )) {
 			add_action( "gform_field_advanced_settings", array( $this, "choose_polyping_post_field" ), 10, 2 );
 			add_action( "gform_editor_js", array( $this, "choose_polyping_post_field_js" ));
 			add_filter( "gform_tooltips", array( $this, "choose_polyping_post_field_tooltip" ));
+			add_action( "gform_entry_info", array( $this, "custom_entry_info" ), 10, 2 );
 		}
 		
 		public function init_frontend()
 		{
 			parent::init_frontend();
 			
-			add_action( "gform_after_submission", array( $this, "post_to_polyping" ), 10, 2 );
-			add_filter( "gform_confirmation", array( $this, "custom_confirmation" ), 10, 4 );
+			//add_action( "gform_after_submission", array( $this, "post_to_polyping" ), 10, 2 );
+			add_filter( "gform_confirmation", array( $this, "custom_confirmation" ), 20, 4 );
 		}
 
 		public function init_ajax()
@@ -82,7 +83,7 @@ if ( class_exists( "GFForms" )) {
 			gform_update_meta( $entry['id'], 'polyping_post_body', $post_body );
 			
 			$request = new WP_Http();
-			$response = $request->post( $post_url, array( 'body' => $post_body ));
+			$response = $request->post( $post_url, array( 'body' => $post_body, 'timeout' => 600 ));
 			
 			gform_update_meta( $entry['id'], 'polyping_response_raw', $response );
 			
@@ -105,7 +106,25 @@ if ( class_exists( "GFForms" )) {
 		
 		public function custom_confirmation( $confirmation, $form, $entry, $is_ajax )
 		{
+			$settings = $this->get_form_settings( $form );
 			
+			$this->post_to_polyping( $entry, $form );
+			$polyping_success_response = gform_get_meta( $entry['id'], 'polyping_response_success' );
+			
+			if ( $polyping_success_response == 'true' ) {
+				$redirect = gform_get_meta( $entry['id'], 'polyping_response_redirect' );
+				$confirmation = array( 'redirect' => $redirect );
+				$polyping_response_bucket = gform_get_meta( $entry['id'], 'polyping_response_bucket' );
+				
+				if ( $settings['polyping_convert_on'] == 'bucket_filled' ) {
+					if ( $polyping_response_bucket == '1' ) {
+						file_get_contents( $settings['polyping_postback_url'] . $entry[$settings['polyping_transaction_id_field']] );
+					}
+				} else if ( $settings['polyping_convert_on'] == 'every_accept' ) {
+					file_get_contents( $settings['polyping_postback_url'] . $entry[$settings['polyping_transaction_id_field']] );
+				}
+			}
+
 			return $confirmation;
 		}
 		
@@ -173,6 +192,8 @@ if ( class_exists( "GFForms" )) {
 			
 			$polyping_post_fields = explode( ',', $settings['polyping_vertical_fields'] );
 			
+			$polyping_post_fields[] = 'test';
+			
 			return $polyping_post_fields;
 		}
 
@@ -213,6 +234,13 @@ if ( class_exists( "GFForms" )) {
 							,"type" => "select"
 							,"name" => "polyping_subid_source_field"
 							,"tooltip" => "Select the form field to use for affiliate subinformation identification."
+							,"choices" => $field_choices
+						)
+						,array(
+							"label" => "Transaction ID Field"
+							,"type" => "select"
+							,"name" => "polyping_transaction_id_field"
+							,"tooltip" => "Select the form field to use for the transaction ID."
 							,"choices" => $field_choices
 						)
 					)
@@ -257,7 +285,7 @@ if ( class_exists( "GFForms" )) {
 						)
 					)
 				)
-				,array(
+				/*,array(
 					"title" => "Response Handling"
 					,"fields" => array(
 						array(
@@ -294,7 +322,7 @@ if ( class_exists( "GFForms" )) {
 							,"class" => "large merge-tag-support mt-position-right"
 						)
 					)
-				)
+				)*/
 				,array(
 					"title" => "Conversion Tracking"
 					,"fields" => array(
@@ -322,8 +350,8 @@ if ( class_exists( "GFForms" )) {
 							"label" => "Server Postback URL"
 							,"type" => "text"
 							,"name" => "polyping_postback_url"
-							,"tooltip" => "Set the server postback URL to be used when firing a conversion here."
-							,"class" => "large merge-tag-support mt-position-right"
+							,"tooltip" => "Set the server postback URL to be used when firing a conversion here. The transaction ID will be automatically appended when used. Example: http://link.go2oursite.net/GP7X?transaction_id="
+							,"class" => "large"
 						)
 					)
 				)
@@ -359,15 +387,13 @@ if ( class_exists( "GFForms" )) {
 				return $settings;
 			}
 			
-			//print_r( $settings );
-			
 			$url = $settings["polyping_post_doc_url"];
 			if ( $url == "" ) {
 				$settings['polyping_vertical_name'] = "";
 				$settings['polyping_vertical_posting_url'] = "";
 				$settings['polyping_platform_license'] = "";
 				$settings['polyping_vertical_fields'] = "";
-				//print_r( $settings );
+				
 				return $settings;
 			}
 			
@@ -400,6 +426,35 @@ if ( class_exists( "GFForms" )) {
 			//print_r( $settings );
 			
 			return $settings;
+		}
+		
+		public function custom_entry_info ( $form_id, $entry )
+		{
+			$id = $entry['id'];
+			$post_url = gform_get_meta( $id, 'polyping_post_url' );
+			$post_body = gform_get_meta( $id, 'polyping_post_body' );
+			$response_raw = gform_get_meta( $id, 'polyping_response_raw' );
+			$response_success = gform_get_meta( $id, 'polyping_response_success' );
+			$response_message = gform_get_meta( $id, 'polyping_response_message' );
+			$response_session_id = gform_get_meta( $id, 'polyping_response_session_id' );
+			$response_price = gform_get_meta( $id, 'polyping_response_price' );
+			$response_redirect = gform_get_meta( $id, 'polyping_response_redirect' );
+			$response_bucket = gform_get_meta( $id, 'polyping_response_bucket' );
+			
+			echo "<strong>PolyPing Meta Info</strong><br /><br />\n";
+			echo "Post URL: $post_url <br /><br />\n";
+			echo "Post Body: ";
+			print_r( $post_body );
+			echo "<br /><br />\n";
+			echo "Response Raw: ";
+			print_r( $response_raw );
+			echo "<br /><br />\n";
+			echo "Response Success: $response_success <br /><br />\n";
+			echo "Response Message: $response_message <br /><br />\n";
+			echo "Response Session ID: $response_session_id <br /><br />\n";
+			echo "Response Price: $response_price <br /><br />\n";
+			echo "Response Redirect: $response_redirect <br /><br />\n";
+			echo "Response Bucket: $response_bucket <br /><br />\n";
 		}
 	}
 
