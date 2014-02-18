@@ -47,7 +47,6 @@ if ( class_exists( "GFForms" )) {
 		{
 			parent::init_frontend();
 			
-			//add_action( "gform_after_submission", array( $this, "post_to_polyping" ), 10, 2 );
 			add_filter( "gform_confirmation", array( $this, "custom_confirmation" ), 20, 4 );
 		}
 
@@ -285,44 +284,6 @@ if ( class_exists( "GFForms" )) {
 						)
 					)
 				)
-				/*,array(
-					"title" => "Response Handling"
-					,"fields" => array(
-						array(
-							"label" => "Confirmation Settings"
-							,"type" => "checkbox"
-							,"name" => "polyping_override_confirmation"
-							,"tooltip" => "Check this setting if the existing confirmation settings for the form are to be overridden. The below fields for specifying redirect URLs specific to each possible PolyPing response will be used instead."
-							,"choices" => array(
-								array(
-									"label" => "Override"
-									,"name" => "polyping_override_confirmation"
-								)
-							)
-						)
-						,array(
-							"label" => "Accept URL"
-							,"type" => "text"
-							,"name" => "polyping_accept_url"
-							,"tooltip" => "The URL to redirect to after form submission on an accept response from PolyPing."
-							,"class" => "large merge-tag-support mt-position-right"
-						)
-						,array(
-							"label" => "Reject URL"
-							,"type" => "text"
-							,"name" => "polyping_reject_url"
-							,"tooltip" => "The URL to redirect to after form submission on a reject response from PolyPing."
-							,"class" => "large merge-tag-support mt-position-right"
-						)
-						,array(
-							"label" => "Error URL"
-							,"type" => "text"
-							,"name" => "polyping_error_url"
-							,"tooltip" => "The URL to redirect to after form submission on an error response from PolyPing."
-							,"class" => "large merge-tag-support mt-position-right"
-						)
-					)
-				)*/
 				,array(
 					"title" => "Conversion Tracking"
 					,"fields" => array(
